@@ -79,6 +79,7 @@ struct Light
 struct Material
 {
 	vec3 color;
+	vec2 albedo;
 };
 
 struct Sphere
@@ -105,7 +106,7 @@ const int MAX_HIT_DISTANCE = 1000;
 const int SPHERES_COUNT = 2;
 Sphere spheres[SPHERES_COUNT];
 
-const int LIGHTS_COUNT = 1;
+const int LIGHTS_COUNT = 2;
 Light lights[LIGHTS_COUNT];
 
 // need to find nearest object
@@ -159,11 +160,22 @@ vec3 SceneIntersect(Ray ray)
 			vec3 N = normalize(hit - spheres[s].center);
 
 			vec3 diffuse_light = vec3(0.0);
+			float specular;
 
 			for (int l = 0; l < LIGHTS_COUNT; ++l)
+			{
 				diffuse_light += CalculateLight(lights[l], spheres[s], N);
+				specular = pow(max(0.0, dot(reflect(normalize(lights[l].position), N), ray.direction)), 64.0);
+			}
 			
-			color = spheres[s].material.color * diffuse_light;
+			vec3 reflect_dir = normalize(reflect(ray.direction, N));
+			vec3 reflect_orig;
+			if (dot(reflect_dir, N) < 0)
+				reflect_orig = hit - N * pow(10, -3);
+			else
+				reflect_orig = hit + N * pow(10, -3);
+
+			color = spheres[s].material.color * diffuse_light * spheres[s].material.albedo[0] + vec3(1.0) * specular * spheres[s].material.albedo[1];
 
 			min_hit_distance = t;
 		}
@@ -183,6 +195,7 @@ void main()
 	/// Create scene objects
 	Material mat;
 	mat.color = vec3(0.2, 0.3, 0.4);
+	mat.albedo = vec2(1.0);
 
 	Sphere sphere;
 	sphere.center = vec3(-0.2, 0.0, -1.0);
@@ -193,6 +206,7 @@ void main()
 
 	sphere.radius = 0.2;
 	sphere.material.color = vec3(0.3, 0.2, 0.2);
+	sphere.material.albedo = vec2(1.0, 0.0);
 	sphere.center = vec3(0.3, 0.0, -1.0);
 
 	spheres[1] = sphere;
@@ -203,6 +217,9 @@ void main()
 	light.position = vec3(0.0);
 	light.color = vec3(1.0);
 	lights[0] = light;
+
+	light.position = vec3(1.0, 0.0, 0.0);
+	lights[1] = light;
 	///
 
 	// Create ray
