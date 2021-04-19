@@ -112,6 +112,8 @@ Light lights[LIGHTS_COUNT];
 // need to find nearest object
 float min_hit_distance = MAX_HIT_DISTANCE;
 
+vec3 sky_color = vec3(0.2, 0.7, 0.8);
+
 vec3 CalculateLight(Light light, Sphere sphere, vec3 normal)
 {
 	return dot(normalize(light.position - sphere.center), normal) * light.color;
@@ -145,9 +147,9 @@ vec3 CheckerBoard(Ray ray, vec3 previous_color)
 	return previous_color;
 }
 
-vec3 SceneIntersect(Ray ray)
+vec3 SceneIntersect(in Ray ray)
 {
-	vec3 color = vec3(0.2, 0.7, 0.8);
+	vec3 color = sky_color;
 
 	// Spheres intersection
 	for (int s = 0; s < SPHERES_COUNT; ++s)
@@ -168,15 +170,8 @@ vec3 SceneIntersect(Ray ray)
 				specular = pow(max(0.0, dot(reflect(normalize(lights[l].position), N), ray.direction)), 64.0);
 			}
 			
-			vec3 reflect_dir = normalize(reflect(ray.direction, N));
-			vec3 reflect_orig;
-			if (dot(reflect_dir, N) < 0)
-				reflect_orig = hit - N * pow(10, -3);
-			else
-				reflect_orig = hit + N * pow(10, -3);
-
 			color = spheres[s].material.color * diffuse_light * spheres[s].material.albedo[0] + vec3(1.0) * specular * spheres[s].material.albedo[1];
-
+		
 			min_hit_distance = t;
 		}
 	}
