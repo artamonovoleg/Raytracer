@@ -66,15 +66,6 @@ int main()
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glViewport(0, 0, width, height);
 
-            if (glfwGetKey(pWindow, GLFW_KEY_W))
-                position.y -= 0.01f;
-            if (glfwGetKey(pWindow, GLFW_KEY_S))
-                position.y += 0.01f;
-            if (glfwGetKey(pWindow, GLFW_KEY_A))
-                position.x -= 0.01f;
-            if (glfwGetKey(pWindow, GLFW_KEY_D))
-                position.x += 0.01f;
-
             glm::vec2 cursor_pos = GetCursorPos(pWindow);
 
 			float mx = (cursor_pos.x / width - 0.5f) * 0.05;
@@ -90,10 +81,10 @@ int main()
                 dir = glm::vec3(-1.0f, 0.0f, 0.0f);
 
 			if (glfwGetKey(pWindow, GLFW_KEY_W)) 
-                dir += glm::vec3(0.0f, -1.0f, 0.0f);
+                dir = glm::vec3(0.0f, -1.0f, 0.0f);
 			else 
             if (glfwGetKey(pWindow, GLFW_KEY_S))
-                dir += glm::vec3(0.0f, 1.0f, 0.0f);
+                dir = glm::vec3(0.0f, 1.0f, 0.0f);
 
 			temp_dir.z = dir.z * cos(-my) - dir.x * sin(-my);
 			temp_dir.x = dir.z * sin(-my) + dir.x * cos(-my);
@@ -101,7 +92,8 @@ int main()
 			dir.x = temp_dir.x * cos(mx) - temp_dir.y * sin(mx);
 			dir.y = temp_dir.x * sin(mx) + temp_dir.y * cos(mx);
 			dir.z = temp_dir.z;
-			position += (dir * 0.5f).x;
+
+			position += (dir * 0.05f);
 
             shader->Bind();
             shader->SetVec2("u_resolution", GetResolution(pWindow));
