@@ -1,68 +1,11 @@
 #version 330 core
 
 uniform vec2 u_resolution;
+uniform vec2 u_mouse;
+uniform vec3 u_pos;
 uniform float u_time;
+
 out vec4 frag_color;
-
-const int BIT_COUNT = 8;
-
-int modi(int x, int y) 
-{
-	return x - y * (x / y);
-}
-
-int or(int a, int b) {
-    int result = 0;
-    int n = 1;
-
-    for (int i = 0; i < BIT_COUNT; i++) 
-	{
-        if ((modi(a, 2) == 1) || (modi(b, 2) == 1)) 
-            result += n;
-        a = a / 2;
-        b = b / 2;
-        n = n * 2;
-
-        if (!(a > 0 || b > 0))
-            break;
-    }
-    return result;
-}
-
-int and(int a, int b) 
-{
-    int result = 0;
-    int n = 1;
-
-    for (int i = 0; i < BIT_COUNT; i++) 
-	{
-        if ((modi(a, 2) == 1) && (modi(b, 2) == 1))
-            result += n;
-
-        a = a / 2;
-        b = b / 2;
-        n = n * 2;
-
-        if (!(a > 0 && b > 0))
-            break;
-    }
-    return result;
-}
-
-int not(int a) 
-{
-    int result = 0;
-    int n = 1;
-    
-    for (int i = 0; i < BIT_COUNT; i++) 
-	{
-        if (modi(a, 2) == 0) 
-            result += n;    
-        a = a / 2;
-        n = n * 2;
-    }
-    return result;
-}
 
 struct Ray
 {
@@ -119,73 +62,73 @@ vec3 CalculateLight(Light light, Sphere sphere, vec3 normal)
 	return dot(normalize(light.position - sphere.center), normal) * light.color;
 }
 
-vec3 CheckerBoard(Ray ray, vec3 previous_color)
+struct CastResult
 {
-	if (abs(ray.direction.y) > 1 * pow(10, -3))
-	{
-		float d = -(ray.origin.y + 4.0) / ray.direction.y; // the checkerboard plane has equation y = -4
-        vec3 pt = ray.origin + ray.direction * d;
+	vec3 color;
+	vec3 hit;
+	vec3 normal;
+};
 
-        if (d > 0.0 && abs(pt.x) < 10.0 && pt.z < -10.0 && pt.z >- 30.0) 
-		{
-            float checkerboard_dist = d;
-			if (checkerboard_dist > min_hit_distance)
-				return previous_color;
-
-            vec3 hit = pt;
-            vec3 N = vec3(0.0, 1.0, 0.0);
-
-			int val = int(0.5 * hit.x + 1000.0) + int(0.5 * hit.z);
-
-			if (and(val, 1) == 1)
-				return vec3(1.0) * 0.3;
-			else
-				return vec3(1.0, 0.7, 0.3) * 0.3;
-        }
-	}
-
-	return previous_color;
-}
-
-vec3 SceneIntersect(in Ray ray)
+CastResult SphereCast(Ray ray)
 {
 	vec3 color = sky_color;
 
-	// Spheres intersection
+	CastResult res;
+
 	for (int s = 0; s < SPHERES_COUNT; ++s)
 	{
 		float t = HitSphere(ray, spheres[s]);
 
 		if (t > 0.0 && t < min_hit_distance)
 		{
-			vec3 hit = ray.origin + t * ray.direction;
-			vec3 N = normalize(hit - spheres[s].center);
+			res.hit = ray.origin + t * ray.direction;
+			res.normal = normalize(res.hit - spheres[s].center);
 
 			vec3 diffuse_light = vec3(0.0);
 			float specular;
 
 			for (int l = 0; l < LIGHTS_COUNT; ++l)
 			{
-				diffuse_light += CalculateLight(lights[l], spheres[s], N);
-				specular = pow(max(0.0, dot(reflect(normalize(lights[l].position), N), ray.direction)), 64.0);
+				diffuse_light += CalculateLight(lights[l], spheres[s], res.normal);
+				specular = pow(max(0.0, dot(reflect(normalize(lights[l].position), res.normal), ray.direction)), 64.0);
 			}
 			
 			color = spheres[s].material.color * diffuse_light * spheres[s].material.albedo[0] + vec3(1.0) * specular * spheres[s].material.albedo[1];
-		
+
 			min_hit_distance = t;
 		}
 	}
 
-	// Draw checkerboard
-	color = CheckerBoard(ray, color);
+	res.color = color;
+	return res;
+}
+
+vec3 SceneIntersect(Ray ray)
+{
+	vec3 color = vec3(1.0);
+
+	for (int i = 0; i < 2; ++i)
+	{
+		CastResult res = SphereCast(ray);
+		ray.origin = res.hit;
+		ray.direction = normalize(reflect(res.hit, res.normal));
+		color *= res.color;
+	}
 
 	return color;
+}
+
+mat2 rot(float a) 
+{
+	float s = sin(a);
+	float c = cos(a);
+	return mat2(c, -s, s, c);
 }
 
 void main()
 {
 	float aspect_ratio = u_resolution.x / u_resolution.y;
-	vec2 coord = gl_FragCoord.xy / u_resolution - vec2(0.5);	
+	vec2 coord = gl_FragCoord.xy / u_resolution - vec2(0.5);
 	coord.x *= aspect_ratio;
 	/// Create scene objects
 	Material mat;
@@ -219,11 +162,11 @@ void main()
 
 	// Create ray
 	Ray ray;
-	ray.origin = vec3(0.0, 0.0, 0.0);
+	ray.origin = vec3(u_pos.x, 0.0, u_pos.y);
 	ray.direction = normalize(vec3(coord, -1.0));
-
-	// change light position for better understanding
-	lights[0].position = vec3(cos(u_time), 0.0, 0.0);
+	vec2 mouse = u_mouse / u_resolution;
+	ray.direction.zx *= rot(-mouse.x);
+	ray.direction.yz *= rot(-mouse.y);
 
 	frag_color = vec4(SceneIntersect(ray), 1.0);
 }
