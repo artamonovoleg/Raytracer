@@ -59,7 +59,7 @@ int main()
 
         auto shader = lib.Get("Main");
 
-        while (!glfwWindowShouldClose(pWindow))
+        while (!glfwWindowShouldClose(pWindow) && !glfwGetKey(pWindow, GLFW_KEY_ESCAPE))
         {
             glfwPollEvents();
 
@@ -76,18 +76,18 @@ int main()
 
 			if (glfwGetKey(pWindow, GLFW_KEY_D)) 
                 dir = glm::vec3(1.0f, 0.0f, 0.0f);
-			else 
+            else 
             if (glfwGetKey(pWindow, GLFW_KEY_A)) 
                 dir = glm::vec3(-1.0f, 0.0f, 0.0f);
 
-			if (glfwGetKey(pWindow, GLFW_KEY_W)) 
-                dir = glm::vec3(0.0f, -1.0f, 0.0f);
+			if (glfwGetKey(pWindow, GLFW_KEY_W))  
+                dir = glm::vec3(0.0f, 0.0f, -1.0f);
 			else 
             if (glfwGetKey(pWindow, GLFW_KEY_S))
-                dir = glm::vec3(0.0f, 1.0f, 0.0f);
+                dir = glm::vec3(0.0f, 0.0f, 1.0f);
 
 			temp_dir.z = dir.z * cos(-my) - dir.x * sin(-my);
-			temp_dir.x = dir.z * sin(-my) + dir.x * cos(-my);
+			temp_dir.x = dir.z * sin(-my) + dir.x * cos(-my);  
 			temp_dir.y = dir.y;
 			dir.x = temp_dir.x * cos(mx) - temp_dir.y * sin(mx);
 			dir.y = temp_dir.x * sin(mx) + temp_dir.y * cos(mx);
@@ -97,8 +97,8 @@ int main()
 
             shader->Bind();
             shader->SetVec2("u_resolution", GetResolution(pWindow));
-            shader->SetVec2("u_mouse", GetCursorPos(pWindow));
-            shader->SetVec3("u_pos", position);
+            shader->SetVec2("u_mouse", cursor_pos);
+            shader->SetVec3("u_position", position);
             shader->SetFloat("u_time", glfwGetTime());
 
             glBindVertexArray(vao);
