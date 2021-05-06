@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 
 #include "ShaderLibrary.hpp"
+#include "Camera.hpp"
 
 glm::vec2 GetResolution(GLFWwindow* pWindow)
 {
@@ -19,7 +20,7 @@ glm::vec2 GetCursorPos(GLFWwindow* pWindow)
     return glm::vec2(x, y);
 }
 
-glm::vec3 position = glm::vec3(0.0);
+float lastFrame = 0.0f;
 
 int main()
 {
@@ -57,49 +58,28 @@ int main()
         ShaderLibrary lib;
         lib.Load("Main", "../shaders/vert.glsl", "../shaders/frag.glsl");
 
+        Camera camera(glm::vec3(0.0));
+
         auto shader = lib.Get("Main");
 
         while (!glfwWindowShouldClose(pWindow) && !glfwGetKey(pWindow, GLFW_KEY_ESCAPE))
         {
+            float currentFrame = glfwGetTime();
+            float deltaTime = currentFrame - lastFrame;
+            lastFrame = currentFrame;  
+
             glfwPollEvents();
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glViewport(0, 0, width, height);
 
-            glm::vec2 cursor_pos = GetCursorPos(pWindow);
-
-			float mx = (cursor_pos.x / width - 0.5f) * 0.05;
-			float my = (cursor_pos.y / height - 0.5f) * 0.05;
-
-			glm::vec3 dir(0.0);
-			glm::vec3 temp_dir;
-
-			if (glfwGetKey(pWindow, GLFW_KEY_D)) 
-                dir = glm::vec3(1.0f, 0.0f, 0.0f);
-            else 
-            if (glfwGetKey(pWindow, GLFW_KEY_A)) 
-                dir = glm::vec3(-1.0f, 0.0f, 0.0f);
-
-			if (glfwGetKey(pWindow, GLFW_KEY_W))  
-                dir = glm::vec3(0.0f, 0.0f, -1.0f);
-			else 
-            if (glfwGetKey(pWindow, GLFW_KEY_S))
-                dir = glm::vec3(0.0f, 0.0f, 1.0f);
-
-			temp_dir.z = dir.z * cos(-my) - dir.x * sin(-my);
-			temp_dir.x = dir.z * sin(-my) + dir.x * cos(-my);  
-			temp_dir.y = dir.y;
-			dir.x = temp_dir.x * cos(mx) - temp_dir.y * sin(mx);
-			dir.y = temp_dir.x * sin(mx) + temp_dir.y * cos(mx);
-			dir.z = temp_dir.z;
-
-			position += (dir * 0.05f);
+            camera.OnUpdate(pWindow, deltaTime);
 
             shader->Bind();
             shader->SetVec2("u_resolution", GetResolution(pWindow));
-            shader->SetVec2("u_mouse", cursor_pos);
-            shader->SetVec3("u_position", position);
+            shader->SetVec2("u_mouse", GetCursorPos(pWindow) / GetResolution(pWindow));
             shader->SetFloat("u_time", glfwGetTime());
+            shader->SetMat4("u_view_projection", camera.GetProjectionMatrix() * camera.GetViewMatrix());
 
             glBindVertexArray(vao);
             glDrawArrays(GL_TRIANGLES, 0, 6);
