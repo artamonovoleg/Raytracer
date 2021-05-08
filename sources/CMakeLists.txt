@@ -8,9 +8,8 @@ include_directories(../third_party/glfw/include
                     ../third_party/glad/include
                     ../third_party/glm)
 
-add_executable(rt  main.cpp
-                        Shader.cpp
-                        ShaderLibrary.cpp
-                        Camera.cpp)
+add_executable(rt   main.cpp
+                    Shader.cpp
+                    Camera.cpp)
 
 target_link_libraries(rt glfw glad)

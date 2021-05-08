@@ -1,98 +1,111 @@
-#include <iostream>
-#include <stdexcept>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <stdexcept>
 
-#include "ShaderLibrary.hpp"
-#include "Camera.hpp"
+#include "Shader.hpp"
 
-glm::vec2 GetResolution(GLFWwindow* pWindow)
-{
-    int width, height;
-    glfwGetWindowSize(pWindow, &width, &height);
-    return glm::vec2(width, height);
-}
+float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+    // positions   // texCoords
+    -1.0f,  1.0f,  0.0f, 1.0f,
+    -1.0f, -1.0f,  0.0f, 0.0f,
+    1.0f, -1.0f,  1.0f, 0.0f,
 
-glm::vec2 GetCursorPos(GLFWwindow* pWindow)
-{
-    double x, y;
-    glfwGetCursorPos(pWindow, &x, &y);
-    return glm::vec2(x, y);
-}
-
-float lastFrame = 0.0f;
+    -1.0f,  1.0f,  0.0f, 1.0f,
+    1.0f, -1.0f,  1.0f, 0.0f,
+    1.0f,  1.0f,  1.0f, 1.0f
+};
 
 int main()
 {
-    try
+    glfwInit();
+    int width = 800, height = 600;
+    
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+    GLFWwindow* pWindow = glfwCreateWindow(width, height, "Pathtracer", nullptr, nullptr);
+    if (!pWindow)
+        throw std::runtime_error("Failed to create window");
+
+    glfwMakeContextCurrent(pWindow);
+
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+        throw std::runtime_error("Failed to initialize glad");
+    
+
+    /// Screen quad VAO
+    unsigned int vao, vbo;
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+    /// Create framebuffer
+    unsigned int fbo;
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+    /// Render to texture
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    
+    /// Configure framebuffer
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+
+    unsigned int drawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+    glDrawBuffers(1, drawBuffers);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        throw std::runtime_error("Framebuffer not complete");
+
+    /// Create shaders
+    Shader mainShader("../shaders/vmain.glsl", "../shaders/fmain.glsl");
+    mainShader.Bind();
+    mainShader.SetInt("texture1", 0);
+
+    Shader screenShader("../shaders/vscreen.glsl", "../shaders/fscreen.glsl");
+    screenShader.Bind();
+    screenShader.SetInt("screenTexture", 0);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    while (!glfwWindowShouldClose(pWindow))
     {
-        glfwInit();
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        mainShader.Bind();
+        // glBindTexture(GL_TEXTURE_2D, texture);
+        glBindVertexArray(vao);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-        #ifdef __APPLE__
-            glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_FALSE);
-            glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
-        #endif
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        screenShader.Bind();
+        // glBindTexture(GL_TEXTURE_2D, texture);
+        glBindVertexArray(vao);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        int width = 600, height = 500;
-        GLFWwindow* pWindow = glfwCreateWindow(width, height, "Fractol", nullptr, nullptr);
-
-        if (!pWindow)
-            throw std::runtime_error("Failed to create window");
-
-        glfwMakeContextCurrent(pWindow);
-        glfwSetInputMode(pWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-        if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-            throw std::runtime_error("Failed to initialize GLAD");
-
-        // setup OpenGL state
-        glClearColor(0.2, 0.3, 0.4, 1.0);
-
-        unsigned int vao, vbo;
-        glGenVertexArrays(1, &vao);
-
-        ShaderLibrary lib;
-        lib.Load("Main", "../shaders/vert.glsl", "../shaders/frag.glsl");
-
-        Camera camera(glm::vec3(0.0));
-
-        auto shader = lib.Get("Main");
-
-        while (!glfwWindowShouldClose(pWindow) && !glfwGetKey(pWindow, GLFW_KEY_ESCAPE))
-        {
-            float currentFrame = glfwGetTime();
-            float deltaTime = currentFrame - lastFrame;
-            lastFrame = currentFrame;  
-
-            glfwPollEvents();
-
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            glViewport(0, 0, width, height);
-
-            camera.OnUpdate(pWindow, deltaTime);
-
-            shader->Bind();
-            shader->SetVec2("u_resolution", GetResolution(pWindow));
-            shader->SetVec2("u_mouse", GetCursorPos(pWindow) / GetResolution(pWindow));
-            shader->SetFloat("u_time", glfwGetTime());
-            shader->SetMat4("u_view_projection", camera.GetProjectionMatrix() * camera.GetViewMatrix());
-
-            glBindVertexArray(vao);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-
-            glfwSwapBuffers(pWindow);
-        }
-        
-        glfwTerminate();
-    }
-    catch(const std::exception& e)
-    {
-        std::cerr << e.what() << std::endl;
+        glfwSwapBuffers(pWindow);
+        glfwPollEvents();
     }
 
+    glfwDestroyWindow(pWindow);
+    glfwTerminate();
     return 0;
 }

@@ -4,7 +4,9 @@ uniform vec2 u_resolution;
 uniform float u_time;
 uniform vec2 u_mouse;
 uniform mat4 u_view_projection;
+uniform sampler2D u_acc;
 
+in vec2 TexCoords;
 out vec4 frag_color;
 
 float near = 0.1;
@@ -98,7 +100,7 @@ vec4 SceneIntersect(Ray ray)
 
 	CastResult res;
 	res.ray = ray;
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < 8; i++)
 	{
 		res = CastRay(res.ray);
 		if (res.it > 9000.0)
@@ -147,5 +149,6 @@ void main()
 	spheres[2] = CreateSphere(vec3(0.5, 0.3, -3.0), 1.0, vec3(0.63, 0.88, 0.66));
 	spheres[3] = CreateSphere(vec3(-0.7, 0.0, -2.0), 0.6, vec3(0.96, 0.65, 0.84));
 
-	frag_color = SceneIntersect(ray);
+	vec3 col = SceneIntersect(ray).rgb;
+	frag_color = vec4(col, 1.0);
 }
