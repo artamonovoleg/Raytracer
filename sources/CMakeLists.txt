@@ -10,6 +10,7 @@ include_directories(../third_party/glfw/include
 
 add_executable(rt   main.cpp
                     Shader.cpp
-                    Camera.cpp)
+                    Camera.cpp
+                    Renderer.cpp)
 
 target_link_libraries(rt glfw glad)
