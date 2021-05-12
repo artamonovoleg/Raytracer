@@ -4,17 +4,7 @@
 
 #include "Shader.hpp"
 #include "Renderer.hpp"
-
-float vertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
-    // positions   // texCoords
-    -1.0f,  1.0f,  0.0f, 1.0f,
-    -1.0f, -1.0f,  0.0f, 0.0f,
-    1.0f, -1.0f,  1.0f, 0.0f,
-
-    -1.0f,  1.0f,  0.0f, 1.0f,
-    1.0f, -1.0f,  1.0f, 0.0f,
-    1.0f,  1.0f,  1.0f, 1.0f
-};
+#include "Quad.hpp"
 
 int main()
 {
@@ -35,21 +25,15 @@ int main()
 
     glfwMakeContextCurrent(pWindow);
 
+    glfwSetFramebufferSizeCallback(pWindow, [](GLFWwindow*, int width, int height)
+    {
+        glViewport(0, 0, width, height);
+    });
+
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         throw std::runtime_error("Failed to initialize glad");
 
-    // screen quad VAO
-    unsigned int vao, vbo;
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-
+    Quad quad;
     Shader shader("../shaders/vert.glsl", "../shaders/frag.glsl");
 
     Renderer renderer(800, 600);
@@ -58,11 +42,9 @@ int main()
     {
         glClearColor(0.0, 0.0, 0.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
-        glViewport(0, 0, width, height);
         shader.Bind();
-        glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-
+        quad.Draw();
+        
         glfwSwapBuffers(pWindow);
         glfwPollEvents();
     }
