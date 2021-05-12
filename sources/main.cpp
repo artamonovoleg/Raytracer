@@ -42,8 +42,9 @@ int main()
     {
         glClearColor(0.0, 0.0, 0.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
-        shader.Bind();
-        quad.Draw();
+        // shader.Bind();
+        // quad.Draw();
+        renderer.Draw();
         
         glfwSwapBuffers(pWindow);
         glfwPollEvents();

@@ -1,5 +1,10 @@
 #pragma once
 
+#include <memory>
+#include "Quad.hpp"
+
+class Shader;
+
 class Renderer
 {
     private:
@@ -14,8 +19,18 @@ class Renderer
         unsigned int m_OutputFBO;
         unsigned int m_OutputTexture;
         
-        void CreateDefaultFbTex(unsigned int fbo, unsigned int tex);
+        std::shared_ptr<Shader> m_PathTraceShader;
+        std::shared_ptr<Shader> m_OutputShader;
+
+        Quad m_Quad;
+
+        void CreateDefaultFbTex(unsigned int& fbo, unsigned int& tex);
+
+        void CreateFramebuffers();
+        void CreateShaders();
     public:
         Renderer(int width, int height);
         ~Renderer();
+        
+        void Draw();
 };
