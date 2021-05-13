@@ -5,7 +5,7 @@
 #include "Camera.hpp"
 
 Renderer::Renderer(int width, int height)
-    : m_Width(width), m_Height(height)
+    : m_Width(width), m_Height(height), e2(rd()), dist(0.0f, 1.0f)
 {
     CreateFramebuffers();
     CreateShaders();
@@ -93,6 +93,9 @@ void Renderer::Draw(GLFWwindow* pWindow, float dt)
     glfwGetCursorPos(pWindow, &mousex, &mousey);
     m_PathTraceShader->SetVec2("u_mouse", glm::vec2(mousex, mousey));
     m_PathTraceShader->SetMat4("u_view_projection", m_Camera->GetProjectionMatrix() * m_Camera->GetViewMatrix());
+
+    m_PathTraceShader->SetVec2("u_seed1", glm::vec2((float)dist(e2), (float)dist(e2)) * 999.0f);
+    m_PathTraceShader->SetVec2("u_seed2", glm::vec2((float)dist(e2), (float)dist(e2)) * 999.0f);
     m_Quad.Draw();
     
 

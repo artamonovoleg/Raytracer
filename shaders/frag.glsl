@@ -5,12 +5,57 @@ uniform float u_time;
 uniform vec2 u_mouse;
 uniform mat4 u_view_projection;
 uniform sampler2D u_acc;
+uniform vec2 u_seed1;
+uniform vec2 u_seed2;
 
 in vec2 texCoord;
 out vec4 frag_color;
 
 float near = 0.1;
 float far = 300.0;
+
+uvec4 R_STATE;
+
+uint TausStep(uint z, int S1, int S2, int S3, uint M)
+{
+	uint b = (((z << S1) ^ z) >> S2);
+	return (((z & M) << S3) ^ b);	
+}
+
+uint LCGStep(uint z, uint A, uint C)
+{
+	return (A * z + C);	
+}
+
+vec2 hash22(vec2 p)
+{
+	p += u_seed1.x;
+	vec3 p3 = fract(vec3(p.xyx) * vec3(.1031, .1030, .0973));
+	p3 += dot(p3, p3.yzx+33.33);
+	return fract((p3.xx+p3.yz)*p3.zy);
+}
+
+float random()
+{
+	R_STATE.x = TausStep(R_STATE.x, 13, 19, 12, uint(4294967294));
+	R_STATE.y = TausStep(R_STATE.y, 2, 25, 4, uint(4294967288));
+	R_STATE.z = TausStep(R_STATE.z, 3, 11, 17, uint(4294967280));
+	R_STATE.w = LCGStep(R_STATE.w, uint(1664525), uint(1013904223));
+	return 2.3283064365387e-10 * float((R_STATE.x ^ R_STATE.y ^ R_STATE.z ^ R_STATE.w));
+}
+
+vec3 randomOnSphere() {
+	vec3 rand = vec3(random(), random(), random());
+	float theta = rand.x * 2.0 * 3.14159265;
+	float v = rand.y;
+	float phi = acos(2.0 * v - 1.0);
+	float r = pow(rand.z, 1.0 / 3.0);
+	float x = r * sin(phi) * cos(theta);
+	float y = r * sin(phi) * sin(theta);
+	float z = r * cos(phi);
+	return vec3(x, y, z);
+}
+
 
 float rand(vec2 co)
 {
@@ -112,16 +157,13 @@ vec4 SceneIntersect(Ray ray)
 		newRay.origin = res.hit;
 
 		vec2 co = gl_FragCoord.xy / u_resolution;
-		vec2 dir = vec2(rand(co)) * u_time;
-		dir.y = rand(dir);
-
-		// newRay.direction = normalize(reflect(res.ray.direction, res.normal));
-		newRay.direction = normalize(vec3(dir, rand(dir - co)));
+        vec3 dir = vec3(random() * co.x, random() * co.y, random() * u_time);
+		newRay.direction = normalize(dir);
 		res.ray = newRay;
 
 		/* the mask colour picks up surface colours at each bounce */
 		mask *= res.color; 
-		color += mask * vec3(0.25); // vec3 - emission
+		color += mask * vec3(1.0); // vec3 - emission
 
 		/* perform cosine-weighted importance sampling for diffuse surfaces*/
 		mask *= dot(newRay.direction, res.normal); 
@@ -134,6 +176,12 @@ void main()
 {
 	float aspect_ratio = u_resolution.x / u_resolution.y;
 	vec2 coord = (gl_FragCoord.xy / u_resolution) - vec2(0.5);
+
+    vec2 uvRes = hash22(coord + 1.0) * u_resolution + u_resolution;
+	R_STATE.x = uint(u_seed1.x + uvRes.x);
+	R_STATE.y = uint(u_seed1.y + uvRes.x);
+	R_STATE.z = uint(u_seed2.x + uvRes.y);
+	R_STATE.w = uint(u_seed2.y + uvRes.y);
 
 	float ndcDepth = far - near;
 	float ndcSum = far + near;

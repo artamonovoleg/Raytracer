@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <random>
 #include "Quad.hpp"
 
 class Shader;
@@ -25,6 +26,10 @@ class Renderer
         std::shared_ptr<Shader> m_OutputShader;
 
         std::shared_ptr<Camera> m_Camera;
+
+	    std::random_device rd;
+	    std::mt19937 e2;
+	    std::uniform_real_distribution<> dist;
 
         Quad m_Quad;
 
