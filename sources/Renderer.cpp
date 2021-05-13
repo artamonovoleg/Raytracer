@@ -27,7 +27,7 @@ Renderer::~Renderer()
 void Renderer::CreateFramebuffers()
 {
     CreateDefaultFbTex(m_PathTraceFBO, m_PathTraceTexture);
-    CreateDefaultFbTex(m_AccumFBO, m_AccumTexture);
+    CreateAccumFbTex(m_AccumFBO, m_AccumTexture);
     CreateDefaultFbTex(m_OutputFBO, m_OutputTexture);
 }
 
@@ -55,7 +55,7 @@ void Renderer::CreateDefaultFbTex(unsigned int& fbo, unsigned int& tex)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Renderer::CreateFbTex(unsigned int& fbo, unsigned int& tex)
+void Renderer::CreateAccumFbTex(unsigned int& fbo, unsigned int& tex)
 {
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -63,7 +63,7 @@ void Renderer::CreateFbTex(unsigned int& fbo, unsigned int& tex)
     //Create Texture for FBO
     glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_Width, m_Height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_Width, m_Height, 0, GL_RGBA, GL_FLOAT, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);

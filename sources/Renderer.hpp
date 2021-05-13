@@ -29,6 +29,7 @@ class Renderer
         Quad m_Quad;
 
         void CreateDefaultFbTex(unsigned int& fbo, unsigned int& tex);
+        void CreateAccumFbTex(unsigned int& fbo, unsigned int& tex);
 
         void CreateFramebuffers();
         void CreateShaders();
