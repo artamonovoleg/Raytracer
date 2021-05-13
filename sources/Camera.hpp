@@ -21,8 +21,8 @@ class Camera
 
         const float m_Speed = 0.5f;
 
-        float lastX =  600.0f / 2.0f;
-        float lastY =  500.0f / 2.0f;
+        float lastX =  800.0f / 2.0f;
+        float lastY =  600.0f / 2.0f;
         bool firstMouse = true;
 
         void RecalculateViewMatrix();

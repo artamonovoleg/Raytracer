@@ -11,7 +11,7 @@ Camera::Camera(const glm::vec3& position)
 
 void Camera::RecalculateViewMatrix()
 {
-    m_View = glm::lookAt(m_Position, m_Position + m_ViewDirection, m_Up);
+    m_View = glm::lookAt(m_Position, m_Position - m_ViewDirection, m_Up);
 }
 
 void Camera::RecalculateVectors()
@@ -30,13 +30,13 @@ void Camera::OnUpdate(GLFWwindow* pWindow, float dt)
 {
 
     if (glfwGetKey(pWindow, GLFW_KEY_W))
-        m_Position += m_Speed * m_ViewDirection * dt;
-    if (glfwGetKey(pWindow, GLFW_KEY_S))
         m_Position -= m_Speed * m_ViewDirection * dt;
+    if (glfwGetKey(pWindow, GLFW_KEY_S))
+        m_Position += m_Speed * m_ViewDirection * dt;
     if (glfwGetKey(pWindow, GLFW_KEY_A))
-        m_Position -= glm::normalize(glm::cross(m_ViewDirection, m_Up)) * m_Speed * dt;
-    if (glfwGetKey(pWindow, GLFW_KEY_D))
         m_Position += glm::normalize(glm::cross(m_ViewDirection, m_Up)) * m_Speed * dt;
+    if (glfwGetKey(pWindow, GLFW_KEY_D))
+        m_Position -= glm::normalize(glm::cross(m_ViewDirection, m_Up)) * m_Speed * dt;
 
     double xpos;
     double ypos;

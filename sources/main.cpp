@@ -6,6 +6,9 @@
 #include "Renderer.hpp"
 #include "Quad.hpp"
 
+float lastFrame = 0.0f;
+float currFrame = 0.0f;
+
 int main()
 {
     glfwInit();
@@ -14,7 +17,6 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
 #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
@@ -24,6 +26,7 @@ int main()
         throw std::runtime_error("Failed to create window");
 
     glfwMakeContextCurrent(pWindow);
+    glfwSetInputMode(pWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     glfwSetFramebufferSizeCallback(pWindow, [](GLFWwindow*, int width, int height)
     {
@@ -40,11 +43,15 @@ int main()
 
     while (!glfwWindowShouldClose(pWindow))
     {
+        float currentFrame = glfwGetTime();
+        float deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
         glClearColor(0.0, 0.0, 0.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
         // shader.Bind();
         // quad.Draw();
-        renderer.Draw();
+        renderer.Draw(pWindow, deltaTime);
         
         glfwSwapBuffers(pWindow);
         glfwPollEvents();

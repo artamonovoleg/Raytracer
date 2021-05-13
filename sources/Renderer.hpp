@@ -4,6 +4,7 @@
 #include "Quad.hpp"
 
 class Shader;
+class Camera;
 
 class Renderer
 {
@@ -20,7 +21,10 @@ class Renderer
         unsigned int m_OutputTexture;
         
         std::shared_ptr<Shader> m_PathTraceShader;
+        std::shared_ptr<Shader> m_AccumShader;
         std::shared_ptr<Shader> m_OutputShader;
+
+        std::shared_ptr<Camera> m_Camera;
 
         Quad m_Quad;
 
@@ -32,5 +36,5 @@ class Renderer
         Renderer(int width, int height);
         ~Renderer();
         
-        void Draw();
+        void Draw(GLFWwindow* pWindow, float dt);
 };
